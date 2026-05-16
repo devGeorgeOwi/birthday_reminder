@@ -2,6 +2,7 @@
 require('dotenv').config();
 const { Command } = require('commander');
 const { pool } = require('./db');
+const bcrypt = require('bcrypt');
 const program = new Command();
 
 program
@@ -14,14 +15,20 @@ program
   .requiredOption('-u, --username <name>', 'username')
   .requiredOption('-e, --email <email>', 'email')
   .requiredOption('-d, --dob <date>', 'date of birth (YYYY-MM-DD)')
+  .requiredOption('-p, --password <password>', 'password') // Optional: you can choose to not require this and set a default or random password
   .action(async (options) => {
     try {
-      // Note: CLI adds user without password – you can extend to accept one
-      await pool.query(
-        'INSERT INTO users (username, email, date_of_birth) VALUES ($1, $2, $3)',
-        [options.username, options.email, options.dob]
+      const hash = await bcrypt.hash(
+        options.password,
+        parseInt(process.env.BCRYPT_SALT_ROUNDS) || 10
       );
-      console.log(`✅ User ${options.username} added.`);
+
+      await pool.query(
+        `INSERT INTO users (username, email, password_hash, date_of_birth, is_verified) 
+        VALUES ($1, $2, $3, $4, TRUE)`,
+        [options.username, options.email, hash, options.dob]
+      );
+      console.log(`✅ User ${options.username} added (verified).`);
     } catch (err) {
       console.error('❌ Error:', err.message);
     } finally {

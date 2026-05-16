@@ -1,4 +1,3 @@
-// src/queue.js
 const Queue = require('bull');
 const { sendEmail } = require('./mailer');
 const axios = require('axios');
@@ -13,6 +12,11 @@ emailQueue.process(async (job) => {
 
   switch (type) {
     case 'verification':
+      console.log('\n🔐 VERIFICATION TOKEN:', rest.token);
+      console.log('📧 Email:', to);
+      console.log('👉 Build your link:');
+      console.log(`${process.env.APP_BASE_URL}/verify-email?token=${rest.token}&email=${to}\n`);
+
       const verifyLink = `${process.env.APP_BASE_URL}/verify-email?token=${rest.token}&email=${to}`;
       subject = 'Verify your email';
       html = `<h1>Welcome ${username}!</h1>
@@ -21,7 +25,13 @@ emailQueue.process(async (job) => {
       break;
 
     case 'password-reset':
+      console.log('\n🔑 PASSWORD RESET TOKEN:', rest.token);
+      console.log('📧 Email:', to);
+      console.log('👉 Build your link:');
+      console.log(`${process.env.APP_BASE_URL}/reset-password?token=${rest.token}&email=${to}`);
+
       const resetLink = `${process.env.APP_BASE_URL}/reset-password?token=${rest.token}&email=${to}`;
+
       subject = 'Password Reset Request';
       html = `<h1>Password Reset</h1>
               <p>Click the link below to reset your password (expires in 1 hour):</p>
@@ -41,16 +51,24 @@ emailQueue.process(async (job) => {
       throw new Error('Unknown email type');
   }
 
-  await sendEmail({ to, subject, html });
+  try {
+    await sendEmail({ to, subject, html });
+    console.log(`📧 Real email sent to ${to}`);
 
-  // Notify webhook about successful send
-  await axios.post(`${process.env.APP_BASE_URL}/webhook/email-status`, {
-    email: to,
-    type,
-    status: 'sent',
-    timestamp: new Date().toISOString(),
-  });
+    // Notify webhook about successful send
+    await axios.post(`${process.env.APP_BASE_URL}/webhook/email-status`, {
+      email: to,
+      type,
+      status: 'sent',
+      timestamp: new Date().toISOString(),
+    });
+  }catch (error) {
+    console.error('❌ Queue job failed:', error.message);
+    // Rethrow so Bull knows the job failed and can retry if attempts remain
+    throw error;
+  }
 });
+  
 
 // Helper to add a job
 function addEmailJob(type, data) {

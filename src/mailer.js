@@ -1,13 +1,31 @@
-// src/mailer.js
-// MOCK – logs emails to console instead of sending.
-// Replace with real Brevo/SendGrid/Nodemailer transporter later.
+console.log('🔥 Mailer loaded: using Gmail SMTP');
+
+const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: parseInt(process.env.EMAIL_PORT, 10),
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
 async function sendEmail({ to, subject, html }) {
-  console.log('────────── MOCK EMAIL ──────────');
-  console.log(`To: ${to}`);
-  console.log(`Subject: ${subject}`);
-  console.log(`HTML: ${html.substring(0, 200)}...`);
-  console.log('────────────────────────────────');
-  return { messageId: 'mock-msg-id' };
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to,
+      subject,
+      html,
+    });
+    console.log(`📧 Email sent to ${to}`, info.messageId);
+    return info;
+  } catch (error) {
+    console.error(`Email error: ${error.message}`) 
+    throw error;
+  }
 }
 
 module.exports = { sendEmail };

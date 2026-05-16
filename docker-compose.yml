@@ -20,6 +20,8 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    ports:
+      - "6379:6379"
 
   app:
     build: .
@@ -42,11 +44,11 @@ services:
       BCRYPT_SALT_ROUNDS: 10
       PORT: 3000
       # Email env vars – add real ones later:
-      # BREVO_HOST: ${BREVO_HOST}
-      # BREVO_PORT: ${BREVO_PORT}
-      # BREVO_USER: ${BREVO_USER}
-      # BREVO_PASS: ${BREVO_PASS}
-      # EMAIL_FROM: ${EMAIL_FROM}
+      EMAIL_HOST: ${EMAIL_HOST}
+      EMAIL_PORT: ${EMAIL_PORT}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+      EMAIL_FROM: ${EMAIL_FROM}
     volumes:
       - ./src:/app/src           # live reload (optional)
       - /app/node_modules
