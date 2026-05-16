@@ -2,7 +2,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const { pool } = require('./db');
 const { addEmailJob } = require('./queue');
 
@@ -14,7 +14,7 @@ router.post('/signup', async (req, res) => {
 
   try {
     const hash = await bcrypt.hash(password, parseInt(process.env.BCRYPT_SALT_ROUNDS));
-    const verificationToken = uuidv4();
+    const verificationToken = crypto.randomUUID();
 
     await pool.query(
       `INSERT INTO users (username, email, password_hash, date_of_birth, verification_token)
@@ -22,15 +22,32 @@ router.post('/signup', async (req, res) => {
       [username, email, hash, dob, verificationToken]
     );
 
+    // // --- Direct email test (bypasses queue) ---
+    // const { sendEmail } = require('./mailer');
+    // const verifyLink = `${process.env.APP_BASE_URL}/verify-email?token=${verificationToken}&email=${email}`;
+    // try {
+    //   await sendEmail({
+    //     to: email,
+    //     subject: 'Verify your email',
+    //     html: `<h1>Welcome ${username}!</h1><p>Please verify your email by clicking the link below:</p><
+    //     a href="${verifyLink}">Verify Email</a>`,
+    //   });
+    //   console.log('✅ Verification email sent directly (bypassing queue).');
+    // } catch (error) {
+    //   console.error('❌ Error sending verification email:', error.message);
+    // }
+
     // Queue verification email
-    await addEmailJob('verification', {
+    addEmailJob('verification', {
       to: email,
       username,
       token: verificationToken,
-    });
+    }).catch(err => console.error('Queue error (non-fatal):', err.message));
 
     res.status(201).json({ message: 'User registered. Please check your email to verify.' });
   } catch (err) {
+    console.log('🔥 SIGNUP ERROR:', err);
+    console.error(err);
     if (err.code === '23505') {
       return res.status(409).json({ error: 'Email already exists' });
     }
@@ -100,7 +117,7 @@ router.post('/forgot-password', async (req, res) => {
       return res.json({ message: 'If that email exists, a reset link has been sent.' });
     }
 
-    const resetToken = uuidv4();
+    const resetToken = crypto.randomUUID();
     const expires = new Date(Date.now() + 3600000); // 1 hour
 
     await pool.query(
@@ -119,6 +136,15 @@ router.post('/forgot-password', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// GET /reset-password - show the reset form
+router.get('/reset-password', (req, res) => {
+  const { token, email } = req.query;
+  if (!token || !email) {
+    return res.status(400).send('<h1>Missing token or email.</h1>');
+  }
+  res.render('reset-password', { token, email });
 });
 
 // ─── Reset Password ───────────────────────────

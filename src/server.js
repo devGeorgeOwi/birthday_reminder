@@ -4,13 +4,20 @@ const express = require('express');
 const path = require('path');
 const { pool, initializeDB } = require('./db');
 const authRouter = require('./auth');
-console.log('Auth module type:', typeof authRouter);
-console.log('Auth keys:', Object.keys(authRouter));
+
+// Test out the router
+// console.log('Auth module type:', typeof authRouter);
+// console.log('Auth keys:', Object.keys(authRouter));
 const { startCronJob } = require('./cronJob');
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+// app.use((req, res, next) => {
+//   console.log('Body:', req.body);
+//   next();
+// });
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -19,12 +26,17 @@ app.set('views', path.join(__dirname, 'views'));
 (async () => {
   await initializeDB();
   startCronJob();
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`🎂 Server running on port ${PORT}`);
+  });
 })();
 
 // Serve UI pages
 app.get('/', (req, res) => res.render('index', { message: null, error: null }));
 app.get('/signup', (req, res) => res.render('signup'));
 app.get('/login', (req, res) => res.render('login'));
+app.get('/forgot-password', (req, res) => res.render('forgot-password'));
 
 // Old birthday form – not used in new flow, but kept as example
 app.post('/register', (req, res) => {
@@ -46,9 +58,6 @@ app.post('/webhook/email-status', (req, res) => {
   res.sendStatus(200);
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🎂 Server running on port ${PORT}`);
-});
+
 
 module.exports = app; // for testing

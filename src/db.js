@@ -15,7 +15,7 @@ async function initializeDB() {
   const client = await pool.connect();
   try {
     // Enable uuid generation if you want (optional)
-    await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+    // await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'); not needed for now
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -25,8 +25,8 @@ async function initializeDB() {
         password_hash VARCHAR(255) NOT NULL,
         date_of_birth DATE NOT NULL,
         is_verified BOOLEAN DEFAULT FALSE,
-        verification_token UUID DEFAULT uuid_generate_v4(),
-        reset_token UUID,
+        verification_token TEXT,
+        reset_token TEXT,
         reset_token_expires_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
