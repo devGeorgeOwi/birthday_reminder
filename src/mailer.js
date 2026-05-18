@@ -1,31 +1,29 @@
-console.log('🔥 Mailer loaded: using Gmail SMTP');
+const { Resend } = require("resend");
 
-const nodemailer = require('nodemailer');
+// Initialize Resend with your API key
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT, 10),
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+console.log('🔥 Mailer loaded: using Resend HTTP API');
 
 async function sendEmail({ to, subject, html }) {
   try {
-    const info = await transporter.sendMail({
+    const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM,
       to,
       subject,
       html,
     });
-    console.log(`📧 Email sent to ${to}`, info.messageId);
-    return info;
+
+    if (error) {
+      console.error(`❌ Error sending email: ${error.message}`);
+      throw new Error(error.message);
+    }
+
+    console.log(`✅ Email sent to ${to}`, data?.id);
+    return data;
   } catch (error) {
-    console.error(`Email error: ${error.message}`) 
+    console.error(`❌ Error sending email: ${error.message}`);
     throw error;
   }
 }
-
 module.exports = { sendEmail };
