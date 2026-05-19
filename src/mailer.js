@@ -2,7 +2,7 @@ const https = require('https');
 
 console.log('🔥 Mailer loaded: using Keplars REST API');
 
-async function sendEmail({ to, subject, text, html }) {
+async function sendEmail({ to, subject, text, html }) {   // 👈 accept text
   const apiKey = process.env.KEPLARS_API_KEY;
   const from = process.env.EMAIL_FROM;
 
@@ -10,14 +10,14 @@ async function sendEmail({ to, subject, text, html }) {
     from: from,
     to: [to],
     subject: subject,
-    text: text,
-    html: html,
+    text: text,   // 👈 plain text body
+    html: html,   // 👈 html body
   });
 
   const options = {
     hostname: 'api.keplars.com',
     port: 443,
-    path: '/api/v1/send-email/instant', // 0-5 sec delivery
+    path: '/api/v1/send-email/instant',
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -46,6 +46,7 @@ async function sendEmail({ to, subject, text, html }) {
       reject(error);
     });
 
+    console.log('📨 Payload being sent:', payload); 
     req.write(payload);
     req.end();
   });
