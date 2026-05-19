@@ -8,7 +8,7 @@ async function sendEmail({ to, subject, html }) {
 
   const payload = JSON.stringify({
     from: from,
-    to: to,
+    to: [to],
     subject: subject,
     html: html,
   });
