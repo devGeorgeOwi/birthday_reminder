@@ -2,7 +2,14 @@ const Queue = require('bull');
 const { sendEmail } = require('./mailer');
 const axios = require('axios');
 
-const emailQueue = new Queue('email queue', process.env.REDIS_URL);
+const emailQueue = new Queue('email queue', {
+  redis: {
+    host: process.env.REDIS_HOST,
+    port: Number(process.env.REDIS_PORT) || 6397,
+    password: process.env.REDIS_PASSWORD,
+    tls: {},
+  },
+});
 
 // Process all email jobs (verification, password-reset, birthday)
 emailQueue.process(async (job) => {
