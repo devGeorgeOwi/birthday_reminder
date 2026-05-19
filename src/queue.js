@@ -5,7 +5,7 @@ const axios = require('axios');
 const emailQueue = new Queue('email queue', {
   redis: {
     host: process.env.REDIS_HOST,
-    port: Number(process.env.REDIS_PORT) || 6397,
+    port: Number(process.env.REDIS_PORT) || 6379,
     password: process.env.REDIS_PASSWORD,
     tls: {},
   },

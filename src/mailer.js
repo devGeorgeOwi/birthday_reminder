@@ -1,55 +1,36 @@
-const https = require('https');
+const axios = require('axios');
 
-console.log('🔥 Mailer loaded: using Keplars REST API');
+console.log('🔥 Mailer loaded: using Brevo HTTP API');
 
-async function sendEmail({ to, subject, text, html }) {   // 👈 accept text
-  const apiKey = process.env.KEPLARS_API_KEY;
+async function sendEmail({ to, subject, text, html }) {
+  const apiKey = process.env.BREVO_API_KEY;
   const from = process.env.EMAIL_FROM;
 
-  const payload = JSON.stringify({
-    from: from,
-    to: [to],
-    subject: subject,
-    text: text,   // 👈 plain text body
-    html: html,   // 👈 html body
-  });
+  try {
+    const response = await axios.post(
+      'https://api.brevo.com/v3/smtp/email',
+      {
+        sender: { name: 'Birthday Reminder', email: from.match(/<(.+)>/)?.[1] || from },
+        to: [{ email: to }],
+        subject,
+        textContent: text,
+        htmlContent: html,
+      },
+      {
+        headers: {
+          'api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
-  const options = {
-    hostname: 'api.keplars.com',
-    port: 443,
-    path: '/api/v1/send-email/instant',
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(payload),
-    },
-  };
-
-  return new Promise((resolve, reject) => {
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => (data += chunk));
-      res.on('end', () => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          console.log(`✅ Email sent to ${to}`, JSON.parse(data));
-          resolve(JSON.parse(data));
-        } else {
-          console.error(`❌ Keplars API error (${res.statusCode}): ${data}`);
-          reject(new Error(`Keplars API error: ${data}`));
-        }
-      });
-    });
-
-    req.on('error', (error) => {
-      console.error(`❌ Network error sending to ${to}: ${error.message}`);
-      reject(error);
-    });
-
-    console.log('📨 Payload being sent:', payload); 
-    req.write(payload);
-    req.end();
-  });
+    console.log(`✅ Email sent to ${to}`, response.data.messageId);
+    return response.data;
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || error.message;
+    console.error(`❌ Brevo API error: ${errorMessage}`);
+    throw new Error(errorMessage);
+  }
 }
 
 module.exports = { sendEmail };
