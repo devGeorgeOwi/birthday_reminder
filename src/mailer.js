@@ -2,7 +2,7 @@ const https = require('https');
 
 console.log('🔥 Mailer loaded: using Keplars REST API');
 
-async function sendEmail({ to, subject, html }) {
+async function sendEmail({ to, subject, text, html }) {
   const apiKey = process.env.KEPLARS_API_KEY;
   const from = process.env.EMAIL_FROM;
 
@@ -10,6 +10,7 @@ async function sendEmail({ to, subject, html }) {
     from: from,
     to: [to],
     subject: subject,
+    text: text,
     html: html,
   });
 

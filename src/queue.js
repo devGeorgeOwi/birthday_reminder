@@ -26,6 +26,7 @@ emailQueue.process(async (job) => {
 
       const verifyLink = `${process.env.APP_BASE_URL}/verify-email?token=${rest.token}&email=${to}`;
       subject = 'Verify your email';
+      text = `Click the link to verify your email: ${verifyLink}`;
       html = `<h1>Welcome ${username}!</h1>
               <p>Please verify your email by clicking the link below:</p>
               <a href="${verifyLink}">Verify Email</a>`;
@@ -40,6 +41,7 @@ emailQueue.process(async (job) => {
       const resetLink = `${process.env.APP_BASE_URL}/reset-password?token=${rest.token}&email=${to}`;
 
       subject = 'Password Reset Request';
+      text = `Click the link to reset your password (expires in 1 hour): ${resetLink}`;
       html = `<h1>Password Reset</h1>
               <p>Click the link below to reset your password (expires in 1 hour):</p>
               <a href="${resetLink}">Reset Password</a>`;
@@ -47,6 +49,7 @@ emailQueue.process(async (job) => {
 
     case 'birthday':
       subject = '🎉 Happy Birthday!';
+      text = `Happy birthday, ${username}! Enjoy your special day! 🎂🎈`;
       html = `<div style="font-family: Arial; padding: 20px; background: #f0f8ff;">
                 <h1>Happy Birthday, ${username}!</h1>
                 <p>Wishing you a day filled with joy and laughter.</p>
@@ -59,7 +62,7 @@ emailQueue.process(async (job) => {
   }
 
   try {
-    await sendEmail({ to, subject, html });
+    await sendEmail({ to, subject, text, html });
     console.log(`📧 Real email sent to ${to}`);
 
     // Notify webhook about successful send
